@@ -25,8 +25,10 @@
 #include <Wire.h>
 #include <VL53L0X.h>
 
-#define LEDPIN 3        // Ditital pin connected to the LED.
-#define NOACK_PIN 4     // Digital pin to flag NOACK received by nRF24
+#define LEDPIN 10        // Ditital pin connected to the LED.
+// #define LEDPIN 3        // Ditital pin connected to the LED.
+#define NOACK_PIN 3     // Digital pin to flag NOACK received by nRF24
+// #define NOACK_PIN 4     // Digital pin to flag NOACK received by nRF24
 #define CE_PIN 7        // RF-NANO usb-c, Arduino-uno -> 7, RF-NANO micro-usb -> 9
 #define CSN_PIN 8       // RF-NANO usb-c, Arduino-uno -> 8, RF-NANO micro-usb -> 10
 
@@ -75,6 +77,8 @@ void setup() {
   Serial.begin(9600);
 
   Serial.println("\n\nnRF24 Application ARO" + String(AAAD_ARO) + ", Module" + String(AAAD_MODULE) + " Started!\n");
+  Serial.println("\CE = " + String(CE_PIN) + ".");
+
 
 // Activate actuators
   led.begin(LEDPIN);
@@ -164,10 +168,13 @@ void loop() {
     radio.stopListening();
     if (radio.write(&txData, sizeof(txData))) {
       Serial.println("ACK received!");
-      nRF24Led.setState(LOW);
+      // nRF24Led.setState(LOW);
+      nRF24Led.setState(0);
     } else {
       Serial.println("No ACK received!");
-      nRF24Led.setState(HIGH);
+      // nRF24Led.setState(HIGH);
+      nRF24Led.setState(107);
+
     }
     radio.startListening();
     previousMillis = currentMillis;
@@ -192,12 +199,14 @@ void loop() {
     Serial.println();
     // }
     // Switch led on Received command
-    if(rxData[0]==1 && rxData[1]==LPP_DIGITAL_OUTPUT) { // channelnumber == 0 and Datatype is LPP_DIGITAL_OUTPUT
-        if (rxData[2]==0xFF) {
+    if(rxData[0]==1 && rxData[1]==LPP_ANALOG_OUTPUT) { // channelnumber == 0 and Datatype is LPP_DIGITAL_OUTPUT
+      Serial.println("rxData[3] = " + String(rxData[3]) + "");
+      if (rxData[3]==107) {
         Serial.println("Led=ON");
+        Serial.println("rxData[2] = " + String(rxData[2]) + "");
         led.setState(HIGH);
       }
-      if (rxData[2]==0x7F) {
+      if (rxData[3]==0) {
         Serial.println("Led=OFF");
         led.setState(LOW);
       }

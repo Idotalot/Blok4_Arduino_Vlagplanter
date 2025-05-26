@@ -19,4 +19,5 @@ void Led::setState(bool state) {
 	// switch led on or off
 	_ledState = state;
 	digitalWrite(_pin,state);
+	// analogWrite(_pin,state);
 }
