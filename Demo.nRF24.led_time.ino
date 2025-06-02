@@ -26,9 +26,7 @@
 #include <VL53L0X.h>
 
 #define LEDPIN 10        // Ditital pin connected to the LED.
-// #define LEDPIN 3        // Ditital pin connected to the LED.
 #define NOACK_PIN 3     // Digital pin to flag NOACK received by nRF24
-// #define NOACK_PIN 4     // Digital pin to flag NOACK received by nRF24
 #define CE_PIN 7        // RF-NANO usb-c, Arduino-uno -> 7, RF-NANO micro-usb -> 9
 #define CSN_PIN 8       // RF-NANO usb-c, Arduino-uno -> 8, RF-NANO micro-usb -> 10
 
@@ -210,6 +208,16 @@ void loop() {
         Serial.println("Led=OFF");
         led.setState(LOW);
       }
+    }
+
+    // VLAG PLANT FUNCTIONALITEIT
+    if(rxData[0]==1 && rxData[1]==LPP_DIGITAL_OUTPUT) {
+      
+      
+      
+      
+      
+      delay(5)
     }
   }
 
