@@ -24,12 +24,16 @@
 #include "RF24.h"       // the library which helps us to control the radio modem
 #include <Wire.h>
 #include <VL53L0X.h>
+#include <Servo.h>
 
 #define LEDPIN 10        // Ditital pin connected to the LED.
 #define NOACK_PIN 3     // Digital pin to flag NOACK received by nRF24
 #define CE_PIN 7        // RF-NANO usb-c, Arduino-uno -> 7, RF-NANO micro-usb -> 9
 #define CSN_PIN 8       // RF-NANO usb-c, Arduino-uno -> 8, RF-NANO micro-usb -> 10
 
+//Initialise Servo's
+Servo pinServo;
+Servo sensorServo;
 
 // Initialise Sensors
 VL53L0X vl53l0x_Sensor;
@@ -44,6 +48,9 @@ Led nRF24Led;
 #define AAAD_ARO 2
 #define AAAD_MODULE 5
 
+//variabeles vlag planten 
+bool richting = 1;
+
 // Create an RF24 object
 RF24 radio(CE_PIN,CSN_PIN);
 
@@ -54,16 +61,19 @@ uint8_t rxData[RF24_PAYLOAD_SIZE];
 uint8_t bytes;
 
 // HC-SR04 Inputs
-const int trigPin = 9;
-const int echoPin = 6;
+// const int trigPin = 9;
+// const int echoPin = 6;
 
-long measurementDuration;
-float measurementDistance;
+// long measurementDuration;
+// float measurementDistance;
 
 // Timing configuration
 unsigned long previousMillis = 0;     // will store last time LED was updated
 unsigned long currentMillis;
 unsigned long sampleTime = 5000;   // milliseconds of on-time
+
+bool measurementRequested = false;
+int measurementCounter = 0;
 
 // int to hex converter
 void printHex2(unsigned v) {
@@ -77,6 +87,19 @@ void setup() {
   Serial.println("\n\nnRF24 Application ARO" + String(AAAD_ARO) + ", Module" + String(AAAD_MODULE) + " Started!\n");
   Serial.println("\CE = " + String(CE_PIN) + ".");
 
+//pinmode defenitie
+  pinMode(A0, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(9, OUTPUT);
+
+//Servo's attach
+  pinServo.attach(5);
+  sensorServo.attach(6);
+  
+//Home servo positions
+  pinServo.write(0);
+  sensorServo.write(25);
 
 // Activate actuators
   led.begin(LEDPIN);
@@ -112,6 +135,10 @@ void setup() {
 
   // Start the radio listening for data
   radio.startListening();
+
+  //Home servo positions again
+  pinServo.write(0);
+  sensorServo.write(25);
 }
 
 void loop() {
@@ -167,6 +194,7 @@ void loop() {
     if (radio.write(&txData, sizeof(txData))) {
       Serial.println("ACK received!");
       // nRF24Led.setState(LOW);
+      measurementCounter++;
       nRF24Led.setState(0);
     } else {
       Serial.println("No ACK received!");
@@ -212,13 +240,46 @@ void loop() {
 
     // VLAG PLANT FUNCTIONALITEIT
     if(rxData[0]==1 && rxData[1]==LPP_DIGITAL_OUTPUT) {
-      
-      
-      
-      
-      
-      delay(5)
+      if(rxData[2]==255) {
+        Serial.println("uitklap verzoek ontvangen");
+
+        digitalWrite(4, richting);
+        for (int i = 0; i < 800; i++) {
+          digitalWrite(A0, HIGH);
+          delay(4);
+          digitalWrite(A0, LOW);
+          delay(4);
+        }
+        pinServo.write(180);
+        delay(2000);
+        pinServo.write(0);
+        richting = !richting;
+        digitalWrite(4, richting);
+        for (int i = 0; i < 700; i++) {
+          digitalWrite(A0, HIGH);
+          delay(4);
+          digitalWrite(A0, LOW);
+          delay(4);
+        }
+        richting = !richting;
+      }
     }
+    if(rxData[0]==1 && rxData[1]==LPP_DIGITAL_OUTPUT) {
+      if(rxData[2]==127) {
+        measurementCounter = 0;
+        measurementRequested = true;
+        Serial.println("Meting verzoek ontvangen");
+        sensorServo.write(130);
+        //doe meting
+        // delay(4000);
+      }
+    }
+  }
+
+  if (measurementCounter == 5 && measurementRequested == true) {
+    sensorServo.write(25);
+    Serial.println("Meting afgerond");
+    measurementRequested = false;
   }
 
 }  // Loop
